@@ -1,197 +1,143 @@
+# SmartDoc AI – Intelligent Document Question Answering System
 
-# SmartDoc AI – Intelligent PDF Question Answering using RAG
+SmartDoc AI is an AI-powered document assistant that allows users to upload PDF documents, manage their files, and ask questions using natural language. It retrieves relevant information from uploaded documents and generates context-aware answers with source references.
 
-SmartDoc AI is a Retrieval-Augmented Generation (RAG) application that enables users to ask natural-language questions about PDF documents and receive context-aware answers generated using Large Language Models (LLMs).
+## Features
 
-The application extracts information from multiple PDF documents, converts the extracted text into vector embeddings, stores them in a FAISS vector database, and retrieves relevant information to generate grounded responses using GPT.
-
-## Key Features
-
-- Extract text from multiple PDF documents.
-- Split extracted text into manageable chunks with overlapping context.
-- Generate semantic embeddings using OpenAI embedding models.
-- Store and search document embeddings using FAISS.
-- Retrieve the most relevant document chunks based on user queries.
-- Generate context-aware answers using GPT.
-- Preserve document names and page numbers for source references.
-
-## Architecture
-
-PDF Documents
-     |
-     v
-PDF Text Extraction (PyMuPDF)
-     |
-     v
-Text Chunking
-     |
-     v
-Embedding Generation
-(OpenAI text-embedding-3-small)
-     |
-     v
-FAISS Vector Database
-     |
-     v
-User Question
-     |
-     v
-Query Embedding
-     |
-     v
-Semantic Search and Retrieval
-     |
-     v
-Retrieved Context + User Question
-     |
-     v
-GPT Answer Generation
-     |
-     v
-Context-Aware Answer with References
+- Upload and manage PDF documents.
+- Delete unwanted documents.
+- Refresh the document list.
+- Extract and process PDF content.
+- Split documents into searchable chunks.
+- Generate vector embeddings.
+- Store and retrieve document vectors using FAISS.
+- Ask questions in natural language.
+- Generate AI-powered answers using Retrieval-Augmented Generation (RAG).
+- Display relevant document sources with answers.
 
 ## Technology Stack
 
 | Component | Technology |
 |---|---|
-| Programming Language | Python |
-| LLM | OpenAI GPT |
-| Embedding Model | text-embedding-3-small |
-| PDF Processing | PyMuPDF |
+| Frontend | React.js, Vite |
+| Styling | Tailwind CSS |
+| Backend | Python, FastAPI |
+| API Testing | Swagger UI |
+| PDF Processing | Python PDF processing libraries |
+| Embeddings | Embedding generation module |
 | Vector Database | FAISS |
-| Numerical Processing | NumPy |
-| Environment Management | python-dotenv |
-| Version Control | Git, GitHub |
-
-## RAG Implementation
-
-### 1. Document Processing
-Extracts text from PDF documents while preserving document names and page numbers.
-
-### 2. Text Chunking
-Splits extracted text into smaller chunks with configurable chunk size and overlap to maintain contextual continuity.
-
-### 3. Embedding Generation
-Converts text chunks into numerical vector representations using OpenAI embeddings.
-
-### 4. Vector Storage
-Stores embeddings in a FAISS index using normalized vectors and inner-product similarity search.
-
-### 5. Semantic Retrieval
-Converts user queries into embeddings and retrieves the top-K most semantically similar document chunks.
-
-### 6. Answer Generation
-Passes the retrieved document context and user question to GPT to generate a natural-language response grounded in the retrieved information.
+| Architecture | Retrieval-Augmented Generation (RAG) |
+| Deployment | Docker (planned) |
 
 ## Project Structure
 
+```text
 SmartDoc-AI/
 │
-├── Documents/                 # Input PDF documents (not committed)
-├── vector_store/              # Generated FAISS index and metadata (not committed)
+├── Documents/
+├── vector_store/
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── App.css
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── package.json
+│   └── vite.config.js
 │
-├── pdf_processor.py           # PDF extraction and text chunking
-├── embedding_generator.py     # OpenAI embedding generation
-├── vector_store.py             # FAISS index creation and storage
-├── retriever.py                # Semantic search and retrieval
-├── answer_generator.py         # GPT-based answer generation
-│
-├── test_embeddings.py          # Embedding generation test
-├── test_retriever.py           # Retrieval test
-├── test_rag.py                 # End-to-end RAG test
-│
-├── requirements.txt
-├── .gitignore
+├── api.py
+├── app.py
+├── pdf_processor.py
+├── embedding_generator.py
+├── vector_store.py
+├── retriever.py
+├── answer_generator.py
+├── Requirements.txt
 └── README.md
+```
 
-## Setup and Installation
+## Installation and Setup
 
 ### 1. Clone the repository
 
+```bash
 git clone https://github.com/SumathiThanga/SmartDoc-AI.git
-
 cd SmartDoc-AI
+```
 
-### 2. Create a virtual environment
+### 2. Backend Setup
 
+Create and activate a Python virtual environment.
+
+**Windows:**
+
+```bash
 python -m venv .venv
-
-### 3. Activate the environment
-
-Windows:
-
 .venv\Scripts\activate
+```
 
-### 4. Install dependencies
+Install dependencies:
 
-pip install -r requirements.txt
+```bash
+pip install -r Requirements.txt
+```
 
-### 5. Configure API Key
+Start the FastAPI backend:
 
-Create a `.env` file in the project root:
+```bash
+uvicorn api:app --reload --host 0.0.0.0 --port 8000
+```
 
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4.1
+Backend API:
 
-Never commit your API key to GitHub.
+- Application: http://localhost:8000
+- Swagger documentation: http://localhost:8000/docs
 
-### 6. Add PDF documents
+### 3. Frontend Setup
 
-Create a `Documents` folder and place your PDF files inside it.
+Open another terminal:
 
-### 7. Build the vector store
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-Run:
+Open the frontend:
 
-python test_embeddings.py
+http://localhost:5173
 
-This extracts document text, creates chunks, generates embeddings, and builds the FAISS index.
+## API Endpoints
 
-### 8. Test semantic retrieval
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/` | Backend welcome message |
+| GET | `/health` | Health check |
+| GET | `/documents` | List uploaded documents |
+| POST | `/upload` | Upload PDF documents |
+| POST | `/ask` | Ask questions about documents |
+| DELETE | `/documents/{filename}` | Delete a document |
 
-python test_retriever.py
+## Application Workflow
 
-### 9. Run the RAG pipeline
-
-python test_rag.py
-
-## Sample Query
-
-**Question:**
-
-What products and solutions does Siemens Digital Industries offer?
-
-**Generated Answer:**
-
-Siemens Digital Industries offers factory automation systems, process control systems, drives, inverters, sensors, PLM software, EDA solutions, Mendix low-code development, and digital services.
-
-The system also retrieves relevant information about AI-enhanced EDA tools and Siemens Industrial Edge, with document and page references.
-
-## Current Implementation Status
-
-- [x] PDF text extraction
-- [x] Text chunking with overlap
-- [x] OpenAI embedding generation
-- [x] FAISS vector index creation
-- [x] Semantic search and retrieval
-- [x] GPT-based answer generation
-- [ ] Improved source-based citations
-- [ ] Retrieval quality evaluation
-- [ ] Streamlit user interface
+1. User uploads PDF documents through the React interface.
+2. FastAPI receives and processes the uploaded documents.
+3. PDF content is extracted and divided into chunks.
+4. Embeddings are generated for the chunks.
+5. FAISS stores the vectors for similarity search.
+6. User submits a question through the chat interface.
+7. Relevant document chunks are retrieved.
+8. The AI generates an answer with supporting source references.
 
 ## Future Enhancements
 
-- Streamlit-based interactive document Q&A interface.
-- Source-grounded citations with document and page references.
-- Hybrid search combining semantic and keyword retrieval.
-- Similarity thresholding and reranking.
-- Support for tables, images, and multimodal PDF content.
-- Conversation history and multi-turn question answering.
+- Docker-based deployment.
+- Improved document processing and indexing.
+- Enhanced error handling and upload validation.
+- Production deployment and scalability.
 
 ## Author
 
-**Sumathi Thangara**
+**Sumathi Thangaraj**
 
-GitHub: https://github.com/SumathiThanga
-
-LinkedIn: https://www.linkedin.com/in/sumathi-thangaraj-73535136
+GitHub: https://github.com/SumathiThanga/SmartDoc-AI
