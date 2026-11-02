@@ -11,10 +11,12 @@ def extract_all_pdfs(folder):
         document = pymupdf.open(pdf_path)
         for page_number,page in enumerate(document):
             text = page.get_text()
-            if text.strip:
-                all_pages.append({"document_name":pdf_path.name,"page_number":page_number + 1,"text":text})
-
-
+            if text.strip():
+                all_pages.append({
+                                "document_name": pdf_path.name,
+                                "page_number": page_number + 1,
+                                "text": text
+                                 })
         document.close()
     return all_pages    
 

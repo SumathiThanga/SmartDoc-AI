@@ -17,3 +17,14 @@ vector_store/
 
 # Temporary files
 *.log
+
+# Uploaded PDF documents
+Documents/*.pdf
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+
+# Frontend environment files
+frontend/.env
+frontend/.env.*

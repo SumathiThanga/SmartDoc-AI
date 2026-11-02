@@ -1,4 +1,8 @@
-streamlit
+
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
 openai
 pymupdf
 faiss-cpu
