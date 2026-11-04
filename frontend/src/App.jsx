@@ -23,7 +23,9 @@ import {
 } from "lucide-react";
 
 //const API_URL = "http://localhost:8000";
-const API_URL = "http://192.168.31.129:8000";
+//const API_URL = "http://192.168.31.129:8000";
+
+const API_URL = "/api";
 
 
 function App() {
