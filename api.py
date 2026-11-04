@@ -24,9 +24,14 @@ DOCUMENTS_FOLDER = Path("Documents")
 MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
 
 # Allow React frontend to communicate with FastAPI
+# Allow React frontend to communicate with FastAPI
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://192.168.31.129:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
