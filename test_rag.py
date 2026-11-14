@@ -1,18 +1,21 @@
+from rag_chain import generate_rag_answer
 
-from retriever import search_documents
-from answer_generator import generate_answer
+question = "What are the types of emulsion?"
 
-question = "What products and solutions does Siemens Digital Industries offer?"
+result = generate_rag_answer(
+    question,
+    top_k=5
+)
 
-# Step 1: Retrieve relevant chunks
-retrieved_chunks = search_documents(question, top_k=5)
+print("\nGPT Generated Answer:\n")
+print(result["answer"])
 
-# Step 2: Generate answer using GPT
-answer = generate_answer(question, retrieved_chunks)
+print("\nSources:\n")
 
-# Step 3: Display final answer
-print("\nUser Question:")
-print(question)
+for source in result["sources"]:
 
-print("\nGPT Generated Answer:")
-print(answer)
+    print("Document:", source["document_name"])
+    print("Page:", source["page_number"])
+    print("Chunk ID:", source["chunk_id"])
+    print("Similarity:", source["similarity_score"])
+    print("--------------------------")

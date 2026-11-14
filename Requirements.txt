@@ -1,10 +1,26 @@
 
+# Backend framework
 fastapi
 uvicorn[standard]
 python-multipart
-pydantic
-openai
-pymupdf
-faiss-cpu
-numpy
+
+# Environment configuration
 python-dotenv
+
+# PDF processing
+pymupdf
+
+# LangChain framework
+langchain
+langchain-community
+langchain-openai
+langchain-text-splitters
+
+# Vector database
+faiss-cpu
+
+# Data processing
+numpy
+
+# Existing OpenAI integration (if needed elsewhere)
+openai

@@ -1,13 +1,25 @@
-import os
 from dotenv import load_dotenv
-from openai import OpenAI
+from langchain_openai import OpenAIEmbeddings
+
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Initialize embedding model
+embeddings_model = OpenAIEmbeddings(
+    model="text-embedding-3-small"
+)
+
+
 def generate_embeddings(chunks):
-    texts =[chunk["text"]
-            for chunk in chunks]
-     
-    response = client.embeddings.create(model="text-embedding-3-small",input = texts)
-    embeddings = [item.embedding
-                  for item in response.data ]
+
+    # Extract text from chunks
+    texts = [
+        chunk["text"]
+        for chunk in chunks
+    ]
+
+    # Generate embeddings using LangChain
+    embeddings = embeddings_model.embed_documents(
+        texts
+    )
+
     return embeddings

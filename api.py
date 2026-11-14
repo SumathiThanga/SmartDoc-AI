@@ -3,9 +3,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from pathlib import Path
-
-from retriever import search_documents
-from answer_generator import generate_answer
+from rag_chain import generate_rag_answer
 
 # Existing document-processing modules
 from pdf_processor import extract_all_pdfs, create_chunks
@@ -216,8 +214,8 @@ def delete_document(filename: str):
 
         remaining_files = list(DOCUMENTS_FOLDER.glob("*.pdf"))
 
-        index_path = Path("vector_store/faiss.index")
-        chunks_path = Path("vector_store/chunks.json")
+        index_path = Path("vector_store/index.faiss")
+        metadata_path = Path("vector_store/index.pkl")
 
         if remaining_files:
 
@@ -248,7 +246,7 @@ def delete_document(filename: str):
         else:
             # No documents remain: remove the old index
             index_path.unlink(missing_ok=True)
-            chunks_path.unlink(missing_ok=True)
+            metadata_path.unlink(missing_ok=True)
 
         # Delete the temporary backup after successful reindexing
         backup_path.unlink(missing_ok=True)
@@ -296,58 +294,28 @@ def delete_document(filename: str):
 @app.post("/ask")
 def ask_question(request: QuestionRequest):
 
-    question = request.question.strip()
+    index_path = Path("vector_store/index.faiss")
+    metadata_path = Path("vector_store/index.pkl")
 
-    if not question:
+    if not index_path.exists() or not metadata_path.exists():
         raise HTTPException(
-            status_code=400,
-            detail="Question cannot be empty"
-        )
-
-    index_path = Path("vector_store/faiss.index")
-    chunks_path = Path("vector_store/chunks.json")
-
-    if not index_path.exists() or not chunks_path.exists():
-        raise HTTPException(
-            status_code=400,
-            detail="Vector database not found. Please index your PDFs first."
+            status_code=404,
+            detail="Vector store not found. Please upload a PDF first."
         )
 
     try:
-        retrieved_chunks = search_documents(
-            question,
+        result = generate_rag_answer(
+            question=request.question,
             top_k=request.top_k
         )
 
-        if not retrieved_chunks:
-            return {
-                "answer": "No relevant information found.",
-                "sources": []
-            }
-
-        answer = generate_answer(
-            question,
-            retrieved_chunks
-        )
-
-        sources = [
-            {
-                "document_name": item["document_name"],
-                "page_number": item["page_number"],
-                "chunk_id": item["chunk_id"],
-                "similarity_score": item["similarity_score"],
-                "text": item["text"]
-            }
-            for item in retrieved_chunks
-        ]
-
         return {
-            "answer": answer,
-            "sources": sources
+            "answer": result["answer"],
+            "sources": result["sources"]
         }
 
-    except Exception as error:
+    except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Question processing failed: {str(error)}"
+            detail=str(e)
         )

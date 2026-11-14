@@ -1,42 +1,64 @@
-import faiss
-import numpy as np
-import json
+
 from pathlib import Path
 
+from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores.utils import DistanceStrategy
+from langchain_openai import OpenAIEmbeddings
+
+
 VECTOR_STORE_FOLDER = Path("vector_store")
-def create_vector_store(chunks,embeddings):
-    vectors = np.array(embeddings,dtype=np.float32)
-    #normalise
-    faiss.normalize_L2(vectors)
-    dimension = vectors.shape[1]
-    #create faiss index
-    index = faiss.IndexFlatIP(dimension)
-    index.add(vectors)
+
+embeddings_model = OpenAIEmbeddings(
+    model="text-embedding-3-small"
+)
+
+
+def create_vector_store(chunks, embeddings):
+
+    # Prepare text and metadata separately
+    texts = [
+        chunk["text"]
+        for chunk in chunks
+    ]
+
+    metadatas = [
+        {
+            "document_name": chunk["document_name"],
+            "page_number": chunk["page_number"],
+            "chunk_id": chunk["chunk_id"]
+        }
+        for chunk in chunks
+    ]
+
+    # Pair each text with its already-generated embedding
+    text_embeddings = list(zip(texts, embeddings))
+
+    # Create LangChain FAISS vector store
+    vector_store = FAISS.from_embeddings(
+        text_embeddings=text_embeddings,
+        embedding=embeddings_model,
+        metadatas=metadatas,
+        normalize_L2=True,
+        distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT
+    )
+
+    # Save vector store locally
     VECTOR_STORE_FOLDER.mkdir(
         parents=True,
         exist_ok=True
     )
-    faiss.write_index(
-        index,
-        str(VECTOR_STORE_FOLDER / "faiss.index")
+
+    vector_store.save_local(
+        str(VECTOR_STORE_FOLDER)
     )
-    with open(
-        VECTOR_STORE_FOLDER / "chunks.json",
-        "w",
-        encoding="utf-8"
-    ) as file:
 
-        json.dump(
-            chunks,
-            file,
-            ensure_ascii=False,
-            indent=4
-        )
+    print("\nLangChain FAISS vector store created!")
 
-    print("\nFAISS index created successfully!")
+    print("Total vectors stored:", vector_store.index.ntotal)
 
-    print("Total vectors stored:", index.ntotal)
+    print(
+        "Vector dimensions:",
+        vector_store.index.d
+    )
 
-    print("Vector dimensions:", dimension)
-
-    return index
+    return vector_store

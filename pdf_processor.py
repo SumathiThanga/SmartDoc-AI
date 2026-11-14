@@ -1,5 +1,6 @@
 import pymupdf
 from pathlib import Path
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 docfolder = Path("Documents")
 
@@ -22,21 +23,35 @@ def extract_all_pdfs(folder):
 
 
 def create_chunks(pages, chunk_size=700, overlap=100):
+
+    # Initialize LangChain text splitter
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=overlap,
+        separators=["\n\n", "\n", " ", ""]
+    )
+
     chunks = []
+
     for page in pages:
-        text = page["text"]
-        start = 0
-        while(start<len(text)):
-            end = start + chunk_size
-            chunk_text = text[start:end].strip()
-            if chunk_text:
-                chunks.append({"document_name":page["document_name"],
-                               "page_number":page["page_number"],
-                               "chunk_id":len(chunks),
-                               "text":chunk_text
-                               })   
-            start += chunk_size - overlap
+
+        # Split the current page's text
+        text_chunks = text_splitter.split_text(
+            page["text"]
+        )
+
+        # Preserve your existing metadata format
+        for text in text_chunks:
+
+            chunks.append({
+                "document_name": page["document_name"],
+                "page_number": page["page_number"],
+                "chunk_id": len(chunks),
+                "text": text
+            })
+
     return chunks
+
 if __name__ == "__main__":
 
     pages = extract_all_pdfs(docfolder)  

@@ -1,284 +1,311 @@
-# SmartDoc AI – Intelligent Document Question Answering System
+# SmartDoc AI
 
-SmartDoc AI is an AI-powered document assistant that allows users to upload PDF documents, manage their files, and ask questions using natural language.
+SmartDoc AI is a document question-answering application that uses
+Retrieval-Augmented Generation (RAG) to answer questions from uploaded
+PDF documents.
 
-It retrieves relevant information from uploaded documents and generates context-aware answers with source references using Retrieval-Augmented Generation (RAG).
-
-The application is built with React and FastAPI and supports containerized deployment using Docker and Docker Compose.
+The application extracts text from PDFs, splits the text into smaller
+chunks, creates embeddings, stores them in a FAISS vector store, and
+retrieves relevant content when a user asks a question. LangChain
+coordinates the retrieval and answer-generation workflow, while FastAPI
+exposes the functionality through REST API endpoints.
 
 ## Features
 
-- Upload and manage PDF documents.
-- Delete unwanted documents.
-- Refresh the document list.
-- Extract and process PDF content.
-- Split documents into searchable chunks.
-- Generate vector embeddings.
-- Store and retrieve document vectors using FAISS.
-- Ask questions in natural language.
-- Generate AI-powered answers using Retrieval-Augmented Generation (RAG).
-- Display relevant document sources with answers.
-- Run frontend and backend services using Docker containers.
-- Persist uploaded documents and vector data using Docker volume mappings.
+-   Upload PDF documents through the API.
+-   Extract text and page information from PDFs.
+-   Split extracted text into chunks using LangChain's
+    `RecursiveCharacterTextSplitter`.
+-   Generate document embeddings using OpenAI embeddings through
+    LangChain.
+-   Store and search embeddings using LangChain's FAISS vector store.
+-   Generate context-based answers using `ChatOpenAI`.
+-   Use `ChatPromptTemplate` to guide answer generation.
+-   Return source information with answers, including document names and
+    page numbers.
+-   Delete documents and rebuild the vector store from the remaining
+    PDFs.
+-   Explore and test endpoints through FastAPI Swagger UI.
 
-## Technology Stack
+## RAG architecture
 
-| Component | Technology |
-|---|---|
-| Frontend | React.js, Vite |
-| Styling | Tailwind CSS |
-| Backend | Python, FastAPI |
-| API Testing | Swagger UI |
-| PDF Processing | PyMuPDF |
-| AI Integration | OpenAI API |
-| Vector Database | FAISS |
-| Embeddings | Embedding generation module |
-| Architecture | Retrieval-Augmented Generation (RAG) |
-| Containerization | Docker |
-| Container Orchestration | Docker Compose |
-| Web Server | Nginx |
+``` text
+PDF Upload
+    |
+    v
+PDF Text Extraction (PyMuPDF)
+    |
+    v
+Text Splitting (RecursiveCharacterTextSplitter)
+    |
+    v
+Embeddings (OpenAIEmbeddings)
+    |
+    v
+LangChain FAISS Vector Store
+    |
+    v
+User Question
+    |
+    v
+Question Embedding and Similarity Search
+    |
+    v
+Relevant Document Chunks
+    |
+    v
+ChatPromptTemplate + ChatOpenAI
+    |
+    v
+Answer + Source References
+```
 
-## Project Structure
+## Technology stack
 
-```text
+-   **Python** -- application language
+-   **FastAPI** -- REST API framework
+-   **Uvicorn** -- ASGI server
+-   **LangChain** -- RAG orchestration, prompts, and document processing
+-   **LangChain OpenAI integration** -- embeddings and chat model
+-   **FAISS** -- vector similarity search
+-   **PyMuPDF** -- PDF text extraction
+-   **OpenAI API** -- embedding and language-model services
+
+## Project structure
+
+The main application files are organized as follows. Your local project
+may contain additional files such as tests, Docker configuration, or
+frontend code.
+
+``` text
 SmartDoc-AI/
 │
 ├── Documents/                 # Uploaded PDF documents
-├── vector_store/              # FAISS index and vector data
 │
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx
-│   │   ├── App.css
-│   │   ├── index.css
-│   │   └── main.jsx
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   ├── package.json
-│   └── vite.config.js
+├── vector_store/              # Persisted LangChain FAISS index
+│   ├── index.faiss
+│   └── index.pkl
 │
-├── api.py                     # FastAPI application
-├── app.py
-├── pdf_processor.py
-├── embedding_generator.py
-├── vector_store.py
-├── retriever.py
-├── answer_generator.py
-├── Requirements.txt
+├── api.py                     # FastAPI application and API endpoints
+├── pdf_processor.py           # PDF extraction and text splitting
+├── embedding_generator.py     # OpenAI embeddings via LangChain
+├── vector_store.py            # FAISS vector-store creation and saving
+├── rag_chain.py               # Complete LangChain RAG pipeline
+├── test_rag.py                # RAG pipeline test
 │
-├── Dockerfile                 # Backend Docker configuration
-├── compose.yaml               # Docker Compose configuration
-├── .dockerignore
+├── Requirements.txt           # Python dependencies
+├── .env                       # Local environment variables (not committed)
 ├── .gitignore
 └── README.md
 ```
 
-## Installation and Setup
+## Prerequisites
 
-### 1. Clone the Repository
+-   Python installed on your machine.
+-   An OpenAI API key.
+-   Git, if you want to clone and contribute to the repository.
 
-```bash
+## Setup
+
+### 1. Clone the repository
+
+``` bash
 git clone https://github.com/SumathiThanga/SmartDoc-AI.git
 cd SmartDoc-AI
 ```
 
-### 2. Configure Environment Variables
+If you are working on the LangChain migration branch:
 
-Create a `.env` file in the project root directory.
-
-Add your OpenAI API configuration:
-
-```env
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4.1
+``` bash
+git checkout feature/langchain-rag
 ```
 
-Replace `your_openai_api_key` with your own OpenAI API key.
-
-**Important:** Never commit your `.env` file or expose your API key on GitHub.
-
-### 3. Run Using Docker (Recommended)
-
-Make sure Docker and Docker Compose are installed.
-
-Build the Docker images and start the application:
-
-```bash
-docker compose up --build -d
-```
-
-Check running containers:
-
-```bash
-docker compose ps
-```
-
-View application logs:
-
-```bash
-docker compose logs -f
-```
-
-Stop the application:
-
-```bash
-docker compose down
-```
-
-The Docker Compose setup runs two services:
-
-- **Backend:** FastAPI application running on port 8000 inside the Docker network.
-- **Frontend:** React application served by Nginx on port 80 inside the frontend container.
-
-The frontend Nginx server forwards `/api/` requests to the FastAPI backend.
-
-The frontend is exposed on host port **8080**.
-
-Open the application:
-
-```text
-http://localhost:8080
-```
-
-For an EC2 deployment, access it using:
-
-```text
-http://<EC2-PUBLIC-IP>:8080
-```
-
-Ensure the EC2 security group permits access to port 8080 from your intended client IP addresses.
-
-### 4. Data Persistence
-
-Docker Compose maps the following folders from the host machine into the backend container:
-
-| Host Folder | Container Folder | Purpose |
-|---|---|---|
-| `Documents/` | `/app/Documents/` | Uploaded PDF documents |
-| `vector_store/` | `/app/vector_store/` | FAISS index and vector data |
-
-This allows uploaded documents and vector data to remain on the host when containers are restarted or recreated.
-
-### 5. Run Locally Without Docker (Development)
-
-#### Backend Setup
-
-Create and activate a Python virtual environment.
+### 2. Create and activate a virtual environment
 
 **Windows:**
 
-```bash
+``` bash
 python -m venv .venv
 .venv\Scripts\activate
 ```
 
-Install dependencies:
+**macOS / Linux:**
 
-```bash
+``` bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+``` bash
+python -m pip install --upgrade pip
 pip install -r Requirements.txt
 ```
 
-Start the FastAPI backend:
+Make sure the requirements file includes the packages used by the
+application, including the LangChain integrations, FAISS, FastAPI,
+PyMuPDF, and `python-dotenv`.
 
-```bash
-uvicorn api:app --reload --host 0.0.0.0 --port 8000
+### 4. Configure environment variables
+
+Create a `.env` file in the project root:
+
+``` env
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4.1
 ```
 
-Backend endpoints:
+Replace `your_openai_api_key` with your own API key.
 
-- Application: http://localhost:8000
-- Swagger documentation: http://localhost:8000/docs
+Do not commit `.env` or expose your API key in source code, screenshots,
+logs, or public repositories.
 
-#### Frontend Setup
+## Run the application
 
-Open another terminal:
+From the project root, with the virtual environment activated:
 
-```bash
-cd frontend
-npm install
-npm run dev
+``` bash
+python -m uvicorn api:app --reload
 ```
 
-Open the frontend:
+The API will be available at:
 
-http://localhost:5173
+-   API base URL: `http://127.0.0.1:8000`
+-   Swagger UI: `http://127.0.0.1:8000/docs`
+-   ReDoc: `http://127.0.0.1:8000/redoc`
+-   OpenAPI schema: `http://127.0.0.1:8000/openapi.json`
 
-## API Endpoints
+FastAPI generates the Swagger UI and OpenAPI schema automatically from
+the routes and Pydantic models defined in `api.py`.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/` | Backend welcome message |
-| GET | `/health` | Health check |
-| GET | `/documents` | List uploaded documents |
-| POST | `/upload` | Upload PDF documents |
-| POST | `/ask` | Ask questions about documents |
-| DELETE | `/documents/{filename}` | Delete a document |
+## Using the API
 
-## Application Workflow
+Open Swagger UI at `http://127.0.0.1:8000/docs` to view the available
+endpoints and try them interactively.
 
-1. User uploads PDF documents through the React interface.
-2. FastAPI receives and processes the uploaded documents.
-3. PDF content is extracted and divided into chunks.
-4. Embeddings are generated for the chunks.
-5. FAISS stores the vectors for similarity search.
-6. User submits a question through the chat interface.
-7. Relevant document chunks are retrieved.
-8. The AI generates an answer with supporting source references.
+### 1. Upload a PDF
 
-## Docker Architecture
+Use the PDF upload endpoint shown in Swagger UI to upload a PDF file.
 
-```text
-             User / Browser
-                    |
-                    v
-             Frontend (Nginx)
-                Port 8080
-                    |
-                    | /api/
-                    v
-             Backend (FastAPI)
-                Port 8000
-                    |
-          ---------------------
-          |                   |
-          v                   v
-      Documents            FAISS
-       Folder           Vector Store
-          |
-          v
-       OpenAI API
+The application processes the PDFs in the `Documents/` directory,
+creates text chunks and embeddings, and builds the FAISS vector store.
+
+### 2. Ask a question
+
+Use the `POST /ask` endpoint. Example request:
+
+``` json
+{
+  "question": "What are the types of emulsion?",
+  "top_k": 5
+}
 ```
 
-The frontend and backend communicate through the Docker Compose network. The backend is not directly published to the host.
+The `question` field contains the user's question. `top_k` controls how
+many relevant chunks are retrieved.
 
-## Deployment
+The response contains:
 
-The application has been containerized and deployed on an AWS EC2 Ubuntu instance.
+-   `answer` -- the generated answer.
+-   `sources` -- retrieved source chunks and their metadata, such as
+    document name, page number, chunk ID, similarity score, and text.
 
-Deployment components:
+Example response structure (the answer, score values, and source content
+will vary):
 
-- AWS EC2 – Application hosting.
-- Docker – Containerization.
-- Docker Compose – Service management.
-- Nginx – Frontend serving and API reverse proxy.
-- FastAPI – Backend API.
-- React – Frontend interface.
+``` json
+{
+  "answer": "The types of emulsion are ...",
+  "sources": [
+    {
+      "document_name": "example.pdf",
+      "page_number": 2,
+      "chunk_id": 10,
+      "similarity_score": 0.60,
+      "text": "Relevant text extracted from the PDF..."
+    }
+  ]
+}
+```
 
-The current EC2 deployment uses port 8080 for frontend access.
+### 3. Delete a PDF
 
-For unrestricted public production deployment, configure HTTPS, user authentication, and appropriate document access controls before making the application publicly accessible.
+Use the document deletion endpoint shown in Swagger UI. The application
+temporarily moves the selected PDF, rebuilds the vector store from the
+remaining PDFs, and removes the backup after successful processing.
 
-## Future Enhancements
+If no PDFs remain, the persisted LangChain FAISS index files are
+removed.
 
-- Domain-based deployment with HTTPS.
-- User authentication and authorization.
-- Document-level access control for multiple users.
-- Improved document processing and indexing.
-- Enhanced error handling and upload validation.
-- Production monitoring and scalability.
+## LangChain implementation
 
-## Author
+The RAG pipeline is separated into modules:
 
-**Sumathi Thangaraj**
+  -----------------------------------------------------------------------
+  Module                              Responsibility
+  ----------------------------------- -----------------------------------
+  `pdf_processor.py`                  Extracts PDF text and splits it
+                                      into chunks
 
-GitHub: https://github.com/SumathiThanga/SmartDoc-AI
+  `embedding_generator.py`            Generates embeddings with
+                                      `OpenAIEmbeddings`
+
+  `vector_store.py`                   Creates and saves the LangChain
+                                      FAISS vector store
+
+  `rag_chain.py`                      Retrieves relevant documents and
+                                      generates answers
+
+  `api.py`                            Exposes document and
+                                      question-answering endpoints
+  -----------------------------------------------------------------------
+
+The persisted LangChain FAISS store uses:
+
+-   `vector_store/index.faiss` -- FAISS vector index
+-   `vector_store/index.pkl` -- document store and metadata
+
+The vector store should be generated by the application's current
+LangChain implementation. Do not mix it with index files created by the
+previous custom FAISS implementation.
+
+## Run the RAG test
+
+If `test_rag.py` is configured to use the current vector store, run:
+
+``` bash
+python test_rag.py
+```
+
+This tests the RAG pipeline independently of the FastAPI endpoints.
+
+## Important security notes
+
+-   Keep API keys in `.env` and ensure `.env` is listed in `.gitignore`.
+-   Do not commit private PDFs, uploaded documents, virtual
+    environments, or generated vector-store data unless you
+    intentionally want to publish them.
+-   LangChain FAISS loading may use pickle deserialization. Only load
+    index files that you created or otherwise fully trust.
+-   Validate uploaded filenames and file types, and enforce upload size
+    limits.
+-   Avoid returning internal exception details to public clients in a
+    production deployment; log diagnostic details on the server instead.
+
+## Notes
+
+-   The exact upload and delete route paths and request fields are
+    defined by `api.py`; use `/docs` as the source of truth.
+-   The example commands above assume the application is run from the
+    project root.
+-   If you deploy with Docker, ensure the container installs the
+    dependencies from `Requirements.txt`, receives `OPENAI_API_KEY`
+    securely, and persists the `Documents/` and `vector_store/`
+    directories if uploaded files and indexes must survive container
+    replacement.
+
+## License
+
+Add the license and usage terms applicable to this repository before
+distributing it publicly.
