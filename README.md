@@ -1,311 +1,303 @@
 # SmartDoc AI
 
-SmartDoc AI is a document question-answering application that uses
-Retrieval-Augmented Generation (RAG) to answer questions from uploaded
-PDF documents.
+SmartDoc AI is a PDF-based question-answering application built using **Retrieval-Augmented Generation (RAG)**. It allows users to upload PDF documents and ask questions based on their contents.
 
-The application extracts text from PDFs, splits the text into smaller
-chunks, creates embeddings, stores them in a FAISS vector store, and
-retrieves relevant content when a user asks a question. LangChain
-coordinates the retrieval and answer-generation workflow, while FastAPI
-exposes the functionality through REST API endpoints.
+The application uses **LangChain, LangGraph, OpenAI, and FAISS** to process documents, generate embeddings, retrieve relevant information, and generate context-aware answers.
 
 ## Features
 
--   Upload PDF documents through the API.
--   Extract text and page information from PDFs.
--   Split extracted text into chunks using LangChain's
-    `RecursiveCharacterTextSplitter`.
--   Generate document embeddings using OpenAI embeddings through
-    LangChain.
--   Store and search embeddings using LangChain's FAISS vector store.
--   Generate context-based answers using `ChatOpenAI`.
--   Use `ChatPromptTemplate` to guide answer generation.
--   Return source information with answers, including document names and
-    page numbers.
--   Delete documents and rebuild the vector store from the remaining
-    PDFs.
--   Explore and test endpoints through FastAPI Swagger UI.
+- Upload PDF documents through FastAPI.
+- Extract text and page information using PyMuPDF.
+- Split extracted text into chunks using LangChain's `RecursiveCharacterTextSplitter`.
+- Generate embeddings using OpenAI's `text-embedding-3-small`.
+- Store and retrieve document embeddings using FAISS.
+- Use LangGraph to orchestrate document ingestion and RAG question answering.
+- Add newly uploaded documents incrementally without reprocessing existing PDFs.
+- Generate context-aware answers using `ChatOpenAI`.
+- Return source references, including document names and page numbers.
+- Delete documents and rebuild the vector store using the remaining PDFs.
+- Explore API endpoints through FastAPI Swagger UI.
 
-## RAG architecture
+## Architecture
 
-``` text
+SmartDoc AI separates document processing and question answering into two independent workflows.
+
+### Workflow 1: Document Ingestion
+
+This workflow processes newly uploaded PDF documents and adds their embeddings to the existing FAISS vector store.
+
+```text
 PDF Upload
     |
     v
 PDF Text Extraction (PyMuPDF)
     |
     v
-Text Splitting (RecursiveCharacterTextSplitter)
+Text Splitting (LangChain)
     |
     v
-Embeddings (OpenAIEmbeddings)
+Generate Embeddings (OpenAIEmbeddings)
     |
     v
-LangChain FAISS Vector Store
+Add Documents to Existing FAISS Index
     |
     v
+Persist Updated Vector Store
+```
+
+**Incremental ingestion:** Only the newly uploaded PDF is extracted, split, and embedded. Previously uploaded documents are not reprocessed during normal uploads.
+
+### Workflow 2: RAG Question Answering
+
+This workflow retrieves relevant document chunks and generates an answer to the user's question.
+
+```text
 User Question
     |
     v
-Question Embedding and Similarity Search
+Retrieve Relevant Chunks
     |
     v
-Relevant Document Chunks
+FAISS Similarity Search
     |
     v
-ChatPromptTemplate + ChatOpenAI
+Generate Context-Aware Answer
     |
     v
-Answer + Source References
+Return Answer + Source References
 ```
 
-## Technology stack
+LangGraph manages the retrieval and answer-generation steps as a state-based workflow.
 
--   **Python** -- application language
--   **FastAPI** -- REST API framework
--   **Uvicorn** -- ASGI server
--   **LangChain** -- RAG orchestration, prompts, and document processing
--   **LangChain OpenAI integration** -- embeddings and chat model
--   **FAISS** -- vector similarity search
--   **PyMuPDF** -- PDF text extraction
--   **OpenAI API** -- embedding and language-model services
+## Technology Stack
 
-## Project structure
+| Technology | Purpose |
+|---|---|
+| Python | Application development |
+| FastAPI | REST API framework |
+| Uvicorn | ASGI server |
+| LangChain | Document processing, prompts, and integrations |
+| LangGraph | Workflow orchestration |
+| OpenAIEmbeddings | Text embedding generation |
+| ChatOpenAI | Answer generation |
+| FAISS | Vector similarity search |
+| PyMuPDF | PDF text extraction |
+| RecursiveCharacterTextSplitter | Text chunking |
+| OpenAI API | Embedding and language-model services |
 
-The main application files are organized as follows. Your local project
-may contain additional files such as tests, Docker configuration, or
-frontend code.
+## Project Structure
 
-``` text
+```text
 SmartDoc-AI/
 │
 ├── Documents/                 # Uploaded PDF documents
 │
-├── vector_store/              # Persisted LangChain FAISS index
+├── vector_store/              # Persisted FAISS index
 │   ├── index.faiss
 │   └── index.pkl
 │
-├── api.py                     # FastAPI application and API endpoints
+├── api.py                     # FastAPI application and endpoints
 ├── pdf_processor.py           # PDF extraction and text splitting
-├── embedding_generator.py     # OpenAI embeddings via LangChain
-├── vector_store.py            # FAISS vector-store creation and saving
-├── rag_chain.py               # Complete LangChain RAG pipeline
-├── test_rag.py                # RAG pipeline test
+├── ingestion.py               # Document ingestion workflow
+├── rag_graph.py               # LangGraph RAG workflow
+├── vector_store.py            # FAISS vector-store operations
 │
 ├── Requirements.txt           # Python dependencies
-├── .env                       # Local environment variables (not committed)
+├── .env                       # Environment variables (not committed)
 ├── .gitignore
 └── README.md
 ```
 
 ## Prerequisites
 
--   Python installed on your machine.
--   An OpenAI API key.
--   Git, if you want to clone and contribute to the repository.
+- Python 3.10 or later (use a Python version supported by all installed dependencies).
+- OpenAI API key.
+- Git.
 
 ## Setup
 
 ### 1. Clone the repository
 
-``` bash
+```bash
 git clone https://github.com/SumathiThanga/SmartDoc-AI.git
 cd SmartDoc-AI
 ```
 
-If you are working on the LangChain migration branch:
+Checkout the LangGraph implementation branch:
 
-``` bash
-git checkout feature/langchain-rag
+```bash
+git checkout feature/langgraph-two-workflows
 ```
 
 ### 2. Create and activate a virtual environment
 
 **Windows:**
 
-``` bash
+```bash
 python -m venv .venv
 .venv\Scripts\activate
 ```
 
 **macOS / Linux:**
 
-``` bash
+```bash
 python -m venv .venv
 source .venv/bin/activate
 ```
 
 ### 3. Install dependencies
 
-``` bash
+```bash
 python -m pip install --upgrade pip
 pip install -r Requirements.txt
 ```
-
-Make sure the requirements file includes the packages used by the
-application, including the LangChain integrations, FAISS, FastAPI,
-PyMuPDF, and `python-dotenv`.
 
 ### 4. Configure environment variables
 
 Create a `.env` file in the project root:
 
-``` env
+```env
 OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4.1
 ```
 
-Replace `your_openai_api_key` with your own API key.
+Replace `your_openai_api_key` with your actual OpenAI API key.
 
-Do not commit `.env` or expose your API key in source code, screenshots,
-logs, or public repositories.
+The application uses `python-dotenv` to load environment variables. LangChain's OpenAI integrations automatically read `OPENAI_API_KEY`, so the key does not need to be explicitly passed when initializing `OpenAIEmbeddings` or `ChatOpenAI`.
 
-## Run the application
+**Security:** Never commit your `.env` file or expose your API key in source code.
 
-From the project root, with the virtual environment activated:
+## Run the Application
 
-``` bash
+From the project root:
+
+```bash
 python -m uvicorn api:app --reload
 ```
 
 The API will be available at:
 
--   API base URL: `http://127.0.0.1:8000`
--   Swagger UI: `http://127.0.0.1:8000/docs`
--   ReDoc: `http://127.0.0.1:8000/redoc`
--   OpenAPI schema: `http://127.0.0.1:8000/openapi.json`
-
-FastAPI generates the Swagger UI and OpenAPI schema automatically from
-the routes and Pydantic models defined in `api.py`.
+- API: http://127.0.0.1:8000
+- Swagger UI: http://127.0.0.1:8000/docs
+- ReDoc: http://127.0.0.1:8000/redoc
 
 ## Using the API
 
-Open Swagger UI at `http://127.0.0.1:8000/docs` to view the available
-endpoints and try them interactively.
+Open Swagger UI at `http://127.0.0.1:8000/docs`.
 
 ### 1. Upload a PDF
 
-Use the PDF upload endpoint shown in Swagger UI to upload a PDF file.
+Use the `POST /upload` endpoint to upload a PDF document.
 
-The application processes the PDFs in the `Documents/` directory,
-creates text chunks and embeddings, and builds the FAISS vector store.
+The ingestion workflow:
 
-### 2. Ask a question
+1. Validates and saves the PDF.
+2. Extracts text from the uploaded PDF.
+3. Splits the extracted text into chunks.
+4. Generates embeddings for the new chunks.
+5. Adds the new embeddings to the existing FAISS index.
 
-Use the `POST /ask` endpoint. Example request:
+Existing documents are not reprocessed during normal uploads.
 
-``` json
+### 2. Ask a Question
+
+Use the `POST /ask` endpoint.
+
+Example request:
+
+```json
 {
   "question": "What are the types of emulsion?",
   "top_k": 5
 }
 ```
 
-The `question` field contains the user's question. `top_k` controls how
-many relevant chunks are retrieved.
+`top_k` specifies the number of relevant chunks to retrieve.
 
-The response contains:
+The RAG workflow returns:
 
--   `answer` -- the generated answer.
--   `sources` -- retrieved source chunks and their metadata, such as
-    document name, page number, chunk ID, similarity score, and text.
+- `answer`: Generated answer based on retrieved document content.
+- `sources`: Relevant source chunks and their metadata, including document name, page number, chunk ID, similarity score, and text.
 
-Example response structure (the answer, score values, and source content
-will vary):
+### 3. List Uploaded Documents
 
-``` json
-{
-  "answer": "The types of emulsion are ...",
-  "sources": [
-    {
-      "document_name": "example.pdf",
-      "page_number": 2,
-      "chunk_id": 10,
-      "similarity_score": 0.60,
-      "text": "Relevant text extracted from the PDF..."
-    }
-  ]
-}
+Use:
+
+```text
+GET /documents
 ```
 
-### 3. Delete a PDF
+Returns the uploaded PDF filenames and total document count.
 
-Use the document deletion endpoint shown in Swagger UI. The application
-temporarily moves the selected PDF, rebuilds the vector store from the
-remaining PDFs, and removes the backup after successful processing.
+### 4. Delete a PDF
 
-If no PDFs remain, the persisted LangChain FAISS index files are
-removed.
+Use:
 
-## LangChain implementation
-
-The RAG pipeline is separated into modules:
-
-  -----------------------------------------------------------------------
-  Module                              Responsibility
-  ----------------------------------- -----------------------------------
-  `pdf_processor.py`                  Extracts PDF text and splits it
-                                      into chunks
-
-  `embedding_generator.py`            Generates embeddings with
-                                      `OpenAIEmbeddings`
-
-  `vector_store.py`                   Creates and saves the LangChain
-                                      FAISS vector store
-
-  `rag_chain.py`                      Retrieves relevant documents and
-                                      generates answers
-
-  `api.py`                            Exposes document and
-                                      question-answering endpoints
-  -----------------------------------------------------------------------
-
-The persisted LangChain FAISS store uses:
-
--   `vector_store/index.faiss` -- FAISS vector index
--   `vector_store/index.pkl` -- document store and metadata
-
-The vector store should be generated by the application's current
-LangChain implementation. Do not mix it with index files created by the
-previous custom FAISS implementation.
-
-## Run the RAG test
-
-If `test_rag.py` is configured to use the current vector store, run:
-
-``` bash
-python test_rag.py
+```text
+DELETE /documents/{filename}
 ```
 
-This tests the RAG pipeline independently of the FastAPI endpoints.
+When a PDF is deleted, the vector store is rebuilt using the remaining PDF documents to ensure that deleted document content is no longer available through retrieval.
 
-## Important security notes
+If no PDFs remain, the persisted FAISS index files are removed.
 
--   Keep API keys in `.env` and ensure `.env` is listed in `.gitignore`.
--   Do not commit private PDFs, uploaded documents, virtual
-    environments, or generated vector-store data unless you
-    intentionally want to publish them.
--   LangChain FAISS loading may use pickle deserialization. Only load
-    index files that you created or otherwise fully trust.
--   Validate uploaded filenames and file types, and enforce upload size
-    limits.
--   Avoid returning internal exception details to public clients in a
-    production deployment; log diagnostic details on the server instead.
+## LangGraph Implementation
 
-## Notes
+The application separates responsibilities into independent modules.
 
--   The exact upload and delete route paths and request fields are
-    defined by `api.py`; use `/docs` as the source of truth.
--   The example commands above assume the application is run from the
-    project root.
--   If you deploy with Docker, ensure the container installs the
-    dependencies from `Requirements.txt`, receives `OPENAI_API_KEY`
-    securely, and persists the `Documents/` and `vector_store/`
-    directories if uploaded files and indexes must survive container
-    replacement.
+| Module | Responsibility |
+|---|---|
+| `api.py` | FastAPI endpoints and request handling |
+| `pdf_processor.py` | PDF extraction and text chunking |
+| `ingestion.py` | Document ingestion and incremental indexing |
+| `rag_graph.py` | LangGraph retrieval and answer-generation workflow |
+| `vector_store.py` | FAISS creation, loading, updating, and rebuilding |
+
+### Benefits of This Architecture
+
+- **Separation of concerns:** Ingestion and question answering are independent workflows.
+- **Incremental processing:** New uploads do not require re-embedding existing documents.
+- **Workflow orchestration:** LangGraph organizes retrieval and answer generation into distinct nodes.
+- **Maintainability:** Each module has a clearly defined responsibility.
+- **Source traceability:** Answers include references to the original PDF documents and pages.
+
+## FAISS Vector Store
+
+The persisted LangChain FAISS vector store contains:
+
+```text
+vector_store/
+├── index.faiss
+└── index.pkl
+```
+
+- `index.faiss`: Stores the FAISS vector index.
+- `index.pkl`: Stores the document store and associated metadata.
+
+The vector store is updated when new PDFs are uploaded and rebuilt when documents are deleted.
+
+Only load trusted FAISS index files because LangChain's local FAISS loading can use pickle deserialization.
+
+## Docker
+
+The project includes Docker configuration for running the application in containers.
+
+If dependencies change, rebuild the Docker image:
+
+```bash
+docker compose up --build
+```
+
+Ensure that the OpenAI API key is supplied securely and that the `Documents/` and `vector_store/` directories are persisted if data must survive container replacement.
+
+## Security Considerations
+
+- Keep API keys in `.env`.
+- Ensure `.env` is included in `.gitignore`.
+- Do not commit private PDFs, virtual environments, or generated vector-store data.
+- Validate uploaded filenames, file types, and file sizes.
+- Load only trusted FAISS index files.
+- Avoid exposing internal exception details in production responses.
 
 ## License
 
-Add the license and usage terms applicable to this repository before
-distributing it publicly.
+Add the license and usage terms applicable to this repository before distributing it publicly.
